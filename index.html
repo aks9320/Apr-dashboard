@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manipal Admissions — Performance Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#06090f;--card:#0d1220;--border:rgba(255,255,255,0.06);--text:#c8d6e5;--dim:#4a5568;--head:#f0f4f8;--accent:#6c63ff;--green:#10b981;--red:#ef4444;--amber:#f59e0b;--blue:#3b82f6;--purple:#9333ea}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.hdr{padding:18px 28px 12px;border-bottom:1px solid var(--border);background:linear-gradient(135deg,#0f0a2e 0%,#06090f 100%)}
+.hdr h1{font-size:20px;font-weight:800;color:var(--head)}
+.hdr .sub{font-size:11px;color:var(--dim);margin-top:3px}
+.filters{display:flex;gap:10px;margin-top:10px;align-items:center;flex-wrap:wrap}
+.sel-wrap{display:flex;gap:6px;align-items:center}.sel-wrap label{font-size:10px;color:#475569;font-weight:600}
+select{background:#111827;color:#a5b4fc;border:1px solid rgba(108,99,255,0.25);border-radius:8px;padding:5px 10px;font-size:11px;font-weight:600;font-family:inherit;cursor:pointer;outline:none}
+.tabs{display:flex;gap:0;margin-top:10px;border-bottom:2px solid rgba(255,255,255,0.06)}
+.tab{padding:8px 20px;cursor:pointer;font-size:12px;font-weight:700;color:#64748b;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;user-select:none}
+.tab:hover{color:#94a3b8}.tab.on{color:#a5b4fc;border-bottom-color:#6c63ff}
+.body{padding:16px 28px;display:flex;flex-direction:column;gap:14px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+.kpi{background:var(--card);border-radius:10px;padding:10px 12px;border:1px solid var(--border);position:relative;overflow:hidden}
+.kpi .lbl{font-size:8px;color:#64748b;text-transform:uppercase;letter-spacing:0.6px;font-weight:700;margin-bottom:2px}
+.kpi .val{font-size:20px;font-weight:800;line-height:1.1}
+.kpi .tgt{font-size:8px;color:#475569;margin-top:2px}
+.kpi .bar{position:absolute;bottom:0;left:0;height:3px;border-radius:0 3px 0 0;transition:width .4s}
+.card{background:var(--card);border-radius:12px;border:1px solid var(--border);overflow:hidden}
+.card-h{padding:11px 16px;border-bottom:1px solid var(--border);font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.8px}
+.card-b{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:11px;min-width:900px}
+th{padding:8px 8px;font-weight:700;color:#64748b;text-align:center;font-size:10px;white-space:nowrap;background:rgba(255,255,255,0.02)}
+th:first-child{text-align:left}
+td{padding:8px 8px;text-align:center;border-top:1px solid rgba(255,255,255,0.03)}
+td:first-child{text-align:left;font-weight:600}
+tr.tot{border-top:2px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.02)}
+tr.tot td{font-weight:700}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.chart-card{background:var(--card);border-radius:12px;border:1px solid var(--border);padding:16px}
+.chart-card h3{font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.7px;margin-bottom:12px}
+.footer{text-align:center;padding:10px 0 20px;color:#334155;font-size:9px}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:9px;font-weight:700}
+.badge.g{background:rgba(16,185,129,0.15);color:#10b981}
+.badge.r{background:rgba(239,68,68,0.15);color:#ef4444}
+.badge.a{background:rgba(245,158,11,0.15);color:#f59e0b}
+.hide{display:none}
+@media(max-width:768px){.g2{grid-template-columns:1fr}.body{padding:12px 14px}.hdr{padding:14px 14px 10px}table{min-width:750px}}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <h1>Manipal Admissions — Counselor Performance Dashboard</h1>
+  <div class="sub">398 Head Count · 1,897,129 Total Calls · Targets: 250 calls/day/HC · 200 unique/day/HC · >30% connect · >5 calls>5min/day/HC · >10% C2C</div>
+  <div class="filters">
+    <div class="sel-wrap"><label>Team Lead:</label><select id="tlSel"><option value="ALL">All Team Leads</option></select></div>
+    <div class="sel-wrap"><label>Sales Head:</label><select id="shSel"><option value="ALL">All Sales Heads</option></select></div>
+  </div>
+  <div class="tabs" id="tabBar">
+    <div class="tab on" data-tab="0">Team Leads</div>
+    <div class="tab" data-tab="1">Sales Heads</div>
+    <div class="tab" data-tab="2">TL under SH</div>
+  </div>
+</div>
+
+<div class="body page" id="page0">
+  <div class="kpis" id="kpis0"></div>
+  <div class="card"><div class="card-h">Team Lead Performance</div><div class="card-b"><table id="tlTable"></table></div></div>
+  <div class="g2">
+    <div class="chart-card"><h3>Calls/Day/HC vs Target (250)</h3><canvas id="ch0a"></canvas></div>
+    <div class="chart-card"><h3>Connect % vs Target (30%)</h3><canvas id="ch0b"></canvas></div>
+  </div>
+  <div class="g2">
+    <div class="chart-card"><h3>C2C % vs Target (10%)</h3><canvas id="ch0c"></canvas></div>
+    <div class="chart-card"><h3>Conversion Funnel: L2C → C2P → App2P</h3><canvas id="ch0d"></canvas></div>
+  </div>
+</div>
+
+<div class="body page hide" id="page1">
+  <div class="kpis" id="kpis1"></div>
+  <div class="card"><div class="card-h">Sales Head Performance</div><div class="card-b"><table id="shTable"></table></div></div>
+  <div class="g2">
+    <div class="chart-card"><h3>Sales Heads — Key Metrics Comparison</h3><canvas id="ch1a"></canvas></div>
+    <div class="chart-card"><h3>Sales Heads — Conversion Rates</h3><canvas id="ch1b"></canvas></div>
+  </div>
+</div>
+
+<div class="body page hide" id="page2">
+  <div class="kpis" id="kpis2"></div>
+  <div class="card"><div class="card-h">TL Groups under Sales Heads</div><div class="card-b"><table id="tlshTable"></table></div></div>
+  <div class="g2">
+    <div class="chart-card"><h3>TL Groups — Calls/Day/HC</h3><canvas id="ch2a"></canvas></div>
+    <div class="chart-card"><h3>TL Groups — Connect % & C2C %</h3><canvas id="ch2b"></canvas></div>
+  </div>
+</div>
+
+<div class="footer">Source: Untitled_spreadsheet_(2).xlsx · 3 tables: 28 Team Leads, 4 Sales Heads, 9 TL Groups</div>
+
+<script>
+const D={"tl":[{"name":"Arati Gupta","hc":14,"total_calls":70751,"calls_day_hc":240.6,"unique_calls":55693,"unique_day_hc":189.4,"unique_pct":79.0,"connected":16029,"connect_pct":28.8,"calls_5min":1082,"calls_5min_day_hc":3.5,"c2c":6.8,"l2c":54.0,"c2p":12.0,"app2p":83.0},{"name":"Pawan Kumar","hc":16,"total_calls":83854,"calls_day_hc":249.6,"unique_calls":61373,"unique_day_hc":182.7,"unique_pct":73.0,"connected":17813,"connect_pct":29.0,"calls_5min":1046,"calls_5min_day_hc":3.0,"c2c":5.9,"l2c":68.0,"c2p":8.0,"app2p":77.0},{"name":"Javed Basha","hc":6,"total_calls":31177,"calls_day_hc":247.4,"unique_calls":23950,"unique_day_hc":190.1,"unique_pct":77.0,"connected":5713,"connect_pct":23.9,"calls_5min":246,"calls_5min_day_hc":1.9,"c2c":4.3,"l2c":43.0,"c2p":13.0,"app2p":82.0},{"name":"Nusrath Khanum","hc":14,"total_calls":63259,"calls_day_hc":215.2,"unique_calls":51797,"unique_day_hc":176.2,"unique_pct":82.0,"connected":13313,"connect_pct":25.7,"calls_5min":897,"calls_5min_day_hc":2.9,"c2c":6.7,"l2c":38.0,"c2p":17.0,"app2p":73.0},{"name":"Naveen Devaraj","hc":8,"total_calls":35360,"calls_day_hc":210.5,"unique_calls":25819,"unique_day_hc":153.7,"unique_pct":73.0,"connected":7817,"connect_pct":30.3,"calls_5min":334,"calls_5min_day_hc":1.9,"c2c":4.3,"l2c":43.0,"c2p":13.0,"app2p":87.0},{"name":"Shahnaz Bano","hc":11,"total_calls":60573,"calls_day_hc":262.2,"unique_calls":47276,"unique_day_hc":204.7,"unique_pct":78.0,"connected":10406,"connect_pct":22.0,"calls_5min":700,"calls_5min_day_hc":2.9,"c2c":6.7,"l2c":39.0,"c2p":8.0,"app2p":83.0},{"name":"Rahman Baig","hc":8,"total_calls":52980,"calls_day_hc":315.4,"unique_calls":42825,"unique_day_hc":254.9,"unique_pct":81.0,"connected":6938,"connect_pct":16.2,"calls_5min":501,"calls_5min_day_hc":2.8,"c2c":7.2,"l2c":32.0,"c2p":12.0,"app2p":73.0},{"name":"Aliyakousar Gousalajam Sayyad","hc":16,"total_calls":78604,"calls_day_hc":233.9,"unique_calls":62765,"unique_day_hc":186.8,"unique_pct":80.0,"connected":12984,"connect_pct":20.7,"calls_5min":989,"calls_5min_day_hc":2.8,"c2c":7.6,"l2c":51.0,"c2p":11.0,"app2p":81.0},{"name":"Rajat Sarkar","hc":17,"total_calls":88911,"calls_day_hc":249.1,"unique_calls":74382,"unique_day_hc":208.4,"unique_pct":84.0,"connected":19869,"connect_pct":26.7,"calls_5min":1030,"calls_5min_day_hc":2.8,"c2c":5.2,"l2c":36.0,"c2p":9.0,"app2p":85.0},{"name":"Girish Srirama","hc":17,"total_calls":72264,"calls_day_hc":202.4,"unique_calls":56906,"unique_day_hc":159.4,"unique_pct":79.0,"connected":14099,"connect_pct":24.8,"calls_5min":992,"calls_5min_day_hc":2.7,"c2c":7.0,"l2c":44.0,"c2p":10.0,"app2p":73.0},{"name":"Amit Sharma","hc":13,"total_calls":44719,"calls_day_hc":163.8,"unique_calls":35980,"unique_day_hc":131.8,"unique_pct":80.0,"connected":8583,"connect_pct":23.9,"calls_5min":716,"calls_5min_day_hc":2.5,"c2c":8.3,"l2c":34.0,"c2p":16.0,"app2p":77.0},{"name":"Ajay Bhagwan Jaiswal","hc":17,"total_calls":76069,"calls_day_hc":213.1,"unique_calls":60760,"unique_day_hc":170.2,"unique_pct":80.0,"connected":12253,"connect_pct":20.2,"calls_5min":930,"calls_5min_day_hc":2.5,"c2c":7.6,"l2c":46.0,"c2p":12.0,"app2p":78.0},{"name":"Deepak Singh","hc":16,"total_calls":81531,"calls_day_hc":242.7,"unique_calls":66458,"unique_day_hc":197.8,"unique_pct":82.0,"connected":16295,"connect_pct":24.5,"calls_5min":920,"calls_5min_day_hc":2.6,"c2c":5.6,"l2c":48.0,"c2p":12.0,"app2p":78.0},{"name":"Shiva Nagar","hc":15,"total_calls":61011,"calls_day_hc":193.7,"unique_calls":49218,"unique_day_hc":156.2,"unique_pct":81.0,"connected":12973,"connect_pct":26.4,"calls_5min":795,"calls_5min_day_hc":2.4,"c2c":6.1,"l2c":38.0,"c2p":17.0,"app2p":79.0},{"name":"Nikita Sadarangani","hc":15,"total_calls":62114,"calls_day_hc":197.2,"unique_calls":49660,"unique_day_hc":157.7,"unique_pct":80.0,"connected":11808,"connect_pct":23.8,"calls_5min":788,"calls_5min_day_hc":2.4,"c2c":6.7,"l2c":36.0,"c2p":17.0,"app2p":85.0},{"name":"Rohit Chintu","hc":19,"total_calls":93570,"calls_day_hc":234.5,"unique_calls":78985,"unique_day_hc":198.0,"unique_pct":84.0,"connected":19624,"connect_pct":24.8,"calls_5min":948,"calls_5min_day_hc":2.3,"c2c":4.8,"l2c":56.0,"c2p":9.0,"app2p":81.0},{"name":"Sharon Masih","hc":15,"total_calls":54654,"calls_day_hc":173.5,"unique_calls":45515,"unique_day_hc":144.5,"unique_pct":83.0,"connected":12779,"connect_pct":28.1,"calls_5min":663,"calls_5min_day_hc":2.0,"c2c":5.2,"l2c":55.0,"c2p":11.0,"app2p":88.0},{"name":"Shaik Sabir","hc":13,"total_calls":65134,"calls_day_hc":238.6,"unique_calls":53509,"unique_day_hc":196.0,"unique_pct":82.0,"connected":9236,"connect_pct":17.3,"calls_5min":548,"calls_5min_day_hc":1.9,"c2c":5.9,"l2c":31.0,"c2p":16.0,"app2p":75.0},{"name":"Niju Pazhangyaparambil Kavile","hc":22,"total_calls":113248,"calls_day_hc":245.1,"unique_calls":93911,"unique_day_hc":203.3,"unique_pct":83.0,"connected":17552,"connect_pct":18.7,"calls_5min":901,"calls_5min_day_hc":1.9,"c2c":5.1,"l2c":41.0,"c2p":15.0,"app2p":77.0},{"name":"Kushagra Tewari","hc":13,"total_calls":65426,"calls_day_hc":239.7,"unique_calls":55140,"unique_day_hc":202.0,"unique_pct":84.0,"connected":10888,"connect_pct":19.7,"calls_5min":513,"calls_5min_day_hc":1.8,"c2c":4.7,"l2c":22.0,"c2p":14.0,"app2p":86.0},{"name":"Naveen Korra","hc":15,"total_calls":80198,"calls_day_hc":254.6,"unique_calls":68550,"unique_day_hc":217.6,"unique_pct":85.0,"connected":16133,"connect_pct":23.5,"calls_5min":587,"calls_5min_day_hc":1.8,"c2c":3.6,"l2c":57.0,"c2p":8.0,"app2p":84.0},{"name":"Sahil Juneja","hc":6,"total_calls":21297,"calls_day_hc":169.0,"unique_calls":18540,"unique_day_hc":147.1,"unique_pct":87.0,"connected":3930,"connect_pct":21.2,"calls_5min":130,"calls_5min_day_hc":1.0,"c2c":3.3,"l2c":29.0,"c2p":12.0,"app2p":70.0},{"name":"Raunaq Raina Saraf","hc":16,"total_calls":56194,"calls_day_hc":167.2,"unique_calls":46040,"unique_day_hc":137.0,"unique_pct":82.0,"connected":11177,"connect_pct":24.3,"calls_5min":613,"calls_5min_day_hc":1.7,"c2c":5.5,"l2c":30.0,"c2p":20.0,"app2p":83.0},{"name":"Abhishek Murthy","hc":11,"total_calls":53019,"calls_day_hc":229.5,"unique_calls":38341,"unique_day_hc":166.0,"unique_pct":72.0,"connected":9442,"connect_pct":24.6,"calls_5min":548,"calls_5min_day_hc":2.3,"c2c":5.8,"l2c":35.0,"c2p":14.0,"app2p":79.0},{"name":"Mahima Yadav","hc":12,"total_calls":48916,"calls_day_hc":194.1,"unique_calls":40282,"unique_day_hc":159.8,"unique_pct":82.0,"connected":10061,"connect_pct":25.0,"calls_5min":446,"calls_5min_day_hc":1.7,"c2c":4.4,"l2c":34.0,"c2p":19.0,"app2p":70.0},{"name":"Ketan Narendar","hc":23,"total_calls":118778,"calls_day_hc":245.9,"unique_calls":101796,"unique_day_hc":210.8,"unique_pct":86.0,"connected":22719,"connect_pct":22.3,"calls_5min":764,"calls_5min_day_hc":1.5,"c2c":3.4,"l2c":48.0,"c2p":12.0,"app2p":80.0},{"name":"Anurag Singh","hc":14,"total_calls":58524,"calls_day_hc":199.1,"unique_calls":50810,"unique_day_hc":172.8,"unique_pct":87.0,"connected":10723,"connect_pct":21.1,"calls_5min":408,"calls_5min_day_hc":1.3,"c2c":3.8,"l2c":30.0,"c2p":26.0,"app2p":82.0},{"name":"Anurag Rai","hc":15,"total_calls":52973,"calls_day_hc":168.2,"unique_calls":42353,"unique_day_hc":134.5,"unique_pct":80.0,"connected":12704,"connect_pct":30.0,"calls_5min":379,"calls_5min_day_hc":1.1,"c2c":3.0,"l2c":29.0,"c2p":20.0,"app2p":74.0}],"sh":[{"name":"Manoj","hc":124,"total_calls":580140,"calls_day_hc":4679.0,"unique_calls":464912,"unique_day_hc":3749.0,"unique_pct":80.0,"connected":114519,"connect_pct":0,"calls_5min":6538,"calls_5min_day_hc":53.0,"c2c":5.7,"l2c":41.6,"c2p":12.9,"app2p":79.6},{"name":"Sushant","hc":88,"total_calls":361594,"calls_day_hc":4109.0,"unique_calls":299475,"unique_day_hc":3403.0,"unique_pct":83.0,"connected":72556,"connect_pct":0,"calls_5min":3534,"calls_5min_day_hc":40.0,"c2c":4.9,"l2c":31.7,"c2p":17.1,"app2p":77.4},{"name":"Rohit","hc":101,"total_calls":481476,"calls_day_hc":4767.0,"unique_calls":394991,"unique_day_hc":3911.0,"unique_pct":82.0,"connected":94156,"connect_pct":0,"calls_5min":5538,"calls_5min_day_hc":55.0,"c2c":5.9,"l2c":43.0,"c2p":11.3,"app2p":80.7},{"name":"Balaji V","hc":85,"total_calls":473919,"calls_day_hc":5576.0,"unique_calls":384021,"unique_day_hc":4518.0,"unique_pct":81.0,"connected":85406,"connect_pct":0,"calls_5min":4431,"calls_5min_day_hc":52.0,"c2c":5.2,"l2c":45.3,"c2p":10.4,"app2p":77.6}],"tl_sh":[{"name":"BLR.TL. Javed Basha","hc":35,"total_calls":156550,"calls_day_hc":4473.0,"unique_calls":125407,"unique_day_hc":3583.0,"unique_pct":80.0,"connected":30834,"connect_pct":0,"calls_5min":1931,"calls_5min_day_hc":55.0,"c2c":6.3,"l2c":37.5,"c2p":16.4,"app2p":78.7},{"name":"BLR.TL.Naveen Devaraj","hc":53,"total_calls":244619,"calls_day_hc":4615.0,"unique_calls":188400,"unique_day_hc":3555.0,"unique_pct":77.0,"connected":54438,"connect_pct":0,"calls_5min":3125,"calls_5min_day_hc":59.0,"c2c":5.7,"l2c":56.6,"c2p":10.6,"app2p":82.8},{"name":"Manoj TBH","hc":36,"total_calls":198312,"calls_day_hc":5509.0,"unique_calls":164884,"unique_day_hc":4580.0,"unique_pct":83.0,"connected":32307,"connect_pct":0,"calls_5min":1636,"calls_5min_day_hc":45.0,"c2c":5.1,"l2c":37.2,"c2p":12.0,"app2p":76.4},{"name":"BLR.UT.TL.Deepak Singh","hc":49,"total_calls":236204,"calls_day_hc":4820.0,"unique_calls":189983,"unique_day_hc":3877.0,"unique_pct":80.0,"connected":41532,"connect_pct":0,"calls_5min":2839,"calls_5min_day_hc":58.0,"c2c":6.8,"l2c":48.4,"c2p":11.6,"app2p":78.9},{"name":"Rohit TBH","hc":52,"total_calls":238675,"calls_day_hc":4590.0,"unique_calls":199407,"unique_day_hc":3835.0,"unique_pct":84.0,"connected":50670,"connect_pct":0,"calls_5min":2591,"calls_5min_day_hc":50.0,"c2c":5.1,"l2c":39.0,"c2p":11.5,"app2p":83.2},{"name":"DEL.TL.Sahil Juneja","hc":60,"total_calls":255174,"calls_day_hc":4253.0,"unique_calls":213990,"unique_day_hc":3567.0,"unique_pct":84.0,"connected":48575,"connect_pct":0,"calls_5min":2292,"calls_5min_day_hc":38.0,"c2c":4.7,"l2c":30.6,"c2p":18.0,"app2p":78.5},{"name":"Sushant TBH","hc":28,"total_calls":97692,"calls_day_hc":3489.0,"unique_calls":78333,"unique_day_hc":2798.0,"unique_pct":80.0,"connected":21287,"connect_pct":0,"calls_5min":1095,"calls_5min_day_hc":39.0,"c2c":5.1,"l2c":31.7,"c2p":17.5,"app2p":75.6},{"name":"BLR.M.TL.Abhishek Murthy","hc":45,"total_calls":232370,"calls_day_hc":5164.0,"unique_calls":187413,"unique_day_hc":4165.0,"unique_pct":81.0,"connected":42567,"connect_pct":0,"calls_5min":2012,"calls_5min_day_hc":45.0,"c2c":4.7,"l2c":40.5,"c2p":11.3,"app2p":80.2},{"name":"Balaji V TBH","hc":39,"total_calls":185512,"calls_day_hc":4757.0,"unique_calls":150817,"unique_day_hc":3867.0,"unique_pct":81.0,"connected":31651,"connect_pct":0,"calls_5min":1893,"calls_5min_day_hc":49.0,"c2c":6.0,"l2c":42.4,"c2p":12.5,"app2p":75.2}],"tgt":{"calls_day_hc":250,"unique_day_hc":200,"connect_pct":30,"calls_5min_day_hc":5,"c2c":10},"sh_map":{"Manoj":["Javed Basha","Naveen Devaraj"],"Rohit":["Deepak Singh"],"Sushant":["Sahil Juneja"],"Balaji V":["Abhishek Murthy"]}};
+const TGT=D.tgt;
+let curTab=0,curTL="ALL",curSH="ALL";
+let charts={};
+
+const fmtN=n=>Number(n).toLocaleString("en-IN");
+const pct=v=>v.toFixed(1)+"%";
+function badge(val,target,higher=true){
+  const ok=higher?val>=target:val<=target;
+  const near=higher?val>=target*0.8:val<=target*1.2;
+  if(ok) return `<span class="badge g">✓ ${typeof val==='number'&&val<1?pct(val):val}</span>`;
+  if(near) return `<span class="badge a">${typeof val==='number'&&val<1?pct(val):val}</span>`;
+  return `<span class="badge r">✗ ${typeof val==='number'&&val<1?pct(val):val}</span>`;
+}
+function dc(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
+
+function buildTable(data,tableId,showRank=true){
+  let filtered=data;
+  if(curTL!=="ALL") filtered=data.filter(r=>r.name===curTL);
+  if(curSH!=="ALL"){
+    // For TL table, filter by SH mapping
+    const tlsUnderSH=D.sh_map[curSH]||[];
+    filtered=data.filter(r=>tlsUnderSH.includes(r.name));
+  }
+  if(filtered.length===0) filtered=data;
+
+  const cols=[
+    {h:showRank?"#":"",k:"rank"},
+    {h:"Name",k:"name"},{h:"HC",k:"hc"},{h:"Total Calls",k:"total_calls"},
+    {h:"Calls/Day/HC",k:"calls_day_hc",tgt:250},{h:"Unique Calls",k:"unique_calls"},
+    {h:"Unique/Day/HC",k:"unique_day_hc",tgt:200},{h:"Unique %",k:"unique_pct"},
+    {h:"Connected",k:"connected"},{h:"Connect %",k:"connect_pct",tgt:30},
+    {h:"Calls>5m",k:"calls_5min"},{h:">5m/Day/HC",k:"calls_5min_day_hc",tgt:5},
+    {h:"C2C %",k:"c2c",tgt:10},{h:"L2C %",k:"l2c"},{h:"C2P %",k:"c2p"},{h:"App2P %",k:"app2p"}
+  ];
+
+  // Sort by calls_day_hc desc
+  const sorted=[...filtered].sort((a,b)=>b.calls_day_hc-a.calls_day_hc);
+  
+  let h='<thead><tr>';
+  cols.forEach(c=>{
+    let color='#64748b';
+    if(c.tgt) color='var(--amber)';
+    h+=`<th style="color:${color}">${c.h}</th>`;
+  });
+  h+='</tr></thead><tbody>';
+
+  sorted.forEach((r,i)=>{
+    h+='<tr>';
+    cols.forEach(c=>{
+      if(c.k==='rank'){h+=`<td style="color:#475569">${showRank?i+1:''}</td>`;return;}
+      if(c.k==='name'){h+=`<td>${r.name}</td>`;return;}
+      const v=r[c.k];
+      let display=typeof v==='number'?(v>=100?fmtN(Math.round(v)):v):'';
+      let style='';
+      if(c.tgt){
+        const ok=v>=c.tgt;const near=v>=c.tgt*0.8;
+        style=ok?'color:var(--green);font-weight:700':near?'color:var(--amber);font-weight:600':'color:var(--red)';
+      }
+      if(['unique_pct','connect_pct','c2c','l2c','c2p','app2p'].includes(c.k)) display=v+'%';
+      h+=`<td style="${style}">${display}</td>`;
+    });
+    h+='</tr>';
+  });
+
+  // Total row
+  if(sorted.length>1){
+    const tot={};
+    ['hc','total_calls','unique_calls','connected','calls_5min'].forEach(k=>{tot[k]=sorted.reduce((s,r)=>s+r[k],0);});
+    tot.calls_day_hc=tot.hc>0?Math.round(tot.total_calls/tot.hc/21*10)/10:0; // approx 21 working days
+    tot.unique_day_hc=tot.hc>0?Math.round(tot.unique_calls/tot.hc/21*10)/10:0;
+    tot.unique_pct=tot.total_calls>0?Math.round(tot.unique_calls/tot.total_calls*1000)/10:0;
+    tot.connect_pct=tot.unique_calls>0?Math.round(tot.connected/tot.unique_calls*1000)/10:0;
+    tot.calls_5min_day_hc=tot.hc>0?Math.round(tot.calls_5min/tot.hc/21*10)/10:0;
+    tot.c2c=tot.connected>0?Math.round(tot.calls_5min/tot.connected*1000)/10:0;
+    h+=`<tr class="tot"><td></td><td>TOTAL</td><td>${tot.hc}</td><td>${fmtN(tot.total_calls)}</td><td>${tot.calls_day_hc}</td><td>${fmtN(tot.unique_calls)}</td><td>${tot.unique_day_hc}</td><td>${tot.unique_pct}%</td><td>${fmtN(tot.connected)}</td><td>${tot.connect_pct}%</td><td>${fmtN(tot.calls_5min)}</td><td>${tot.calls_5min_day_hc}</td><td>${tot.c2c}%</td><td></td><td></td><td></td></tr>`;
+  }
+
+  h+='</tbody>';
+  document.getElementById(tableId).innerHTML=h;
+  return sorted;
+}
+
+function buildKPIs(data,kpiId){
+  const tot_hc=data.reduce((s,r)=>s+r.hc,0);
+  const tot_calls=data.reduce((s,r)=>s+r.total_calls,0);
+  const tot_conn=data.reduce((s,r)=>s+r.connected,0);
+  const tot_uniq=data.reduce((s,r)=>s+r.unique_calls,0);
+  const tot_5m=data.reduce((s,r)=>s+r.calls_5min,0);
+  const avg_cdh=data.length>0?(data.reduce((s,r)=>s+r.calls_day_hc,0)/data.length).toFixed(1):0;
+  const avg_conn=data.length>0?(data.reduce((s,r)=>s+r.connect_pct,0)/data.length).toFixed(1):0;
+  const avg_c2c=data.length>0?(data.reduce((s,r)=>s+r.c2c,0)/data.length).toFixed(1):0;
+  const above_cdh=data.filter(r=>r.calls_day_hc>=250).length;
+  const above_conn=data.filter(r=>r.connect_pct>=30).length;
+  const above_c2c=data.filter(r=>r.c2c>=10).length;
+
+  document.getElementById(kpiId).innerHTML=[
+    {l:"Total HC",v:tot_hc,c:"var(--head)"},
+    {l:"Total Calls",v:fmtN(tot_calls),c:"var(--head)"},
+    {l:"Connected",v:fmtN(tot_conn),c:"var(--green)"},
+    {l:"Avg Calls/Day/HC",v:avg_cdh,c:parseFloat(avg_cdh)>=250?"var(--green)":"var(--red)",t:"Target: 250"},
+    {l:"Avg Connect %",v:avg_conn+"%",c:parseFloat(avg_conn)>=30?"var(--green)":"var(--red)",t:"Target: 30%"},
+    {l:"Avg C2C %",v:avg_c2c+"%",c:parseFloat(avg_c2c)>=10?"var(--green)":"var(--red)",t:"Target: 10%"},
+    {l:"≥250 Calls/Day/HC",v:`${above_cdh}/${data.length}`,c:above_cdh>data.length/2?"var(--green)":"var(--red)"},
+    {l:"≥30% Connect",v:`${above_conn}/${data.length}`,c:above_conn>data.length/2?"var(--green)":"var(--red)"},
+    {l:"≥10% C2C",v:`${above_c2c}/${data.length}`,c:above_c2c>data.length/2?"var(--green)":"var(--amber)"},
+  ].map(k=>`<div class="kpi"><div class="lbl">${k.l}</div><div class="val" style="color:${k.c}">${k.v}</div>${k.t?`<div class="tgt">${k.t}</div>`:''}</div>`).join("");
+}
+
+function renderPage0(){
+  let data=D.tl;
+  if(curTL!=="ALL") data=D.tl.filter(r=>r.name===curTL);
+  if(curSH!=="ALL"){const tls=D.sh_map[curSH]||[];if(tls.length>0)data=D.tl.filter(r=>tls.includes(r.name));}
+  if(data.length===0)data=D.tl;
+  
+  buildKPIs(data,"kpis0");
+  const sorted=buildTable(data,"tlTable");
+  const names=sorted.map(r=>r.name.split(' ')[0]);
+
+  dc("ch0a");charts["ch0a"]=new Chart(document.getElementById("ch0a"),{type:"bar",data:{labels:names,datasets:[
+    {label:"Calls/Day/HC",data:sorted.map(r=>r.calls_day_hc),backgroundColor:sorted.map(r=>r.calls_day_hc>=250?"rgba(16,185,129,0.7)":"rgba(239,68,68,0.5)"),borderRadius:4}
+  ]},options:{responsive:true,indexAxis:'y',plugins:{legend:{display:false},annotation:{}},scales:{x:{grid:{color:"rgba(255,255,255,0.03)"},ticks:{color:"#64748b",font:{size:9}}},y:{ticks:{color:"#94a3b8",font:{size:9}},grid:{display:false}}}}});
+
+  dc("ch0b");charts["ch0b"]=new Chart(document.getElementById("ch0b"),{type:"bar",data:{labels:names,datasets:[
+    {label:"Connect %",data:sorted.map(r=>r.connect_pct),backgroundColor:sorted.map(r=>r.connect_pct>=30?"rgba(16,185,129,0.7)":"rgba(239,68,68,0.5)"),borderRadius:4}
+  ]},options:{responsive:true,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{grid:{color:"rgba(255,255,255,0.03)"},ticks:{color:"#64748b",font:{size:9},callback:v=>v+"%"}},y:{ticks:{color:"#94a3b8",font:{size:9}},grid:{display:false}}}}});
+
+  dc("ch0c");charts["ch0c"]=new Chart(document.getElementById("ch0c"),{type:"bar",data:{labels:names,datasets:[
+    {label:"C2C %",data:sorted.map(r=>r.c2c),backgroundColor:sorted.map(r=>r.c2c>=10?"rgba(16,185,129,0.7)":"rgba(239,68,68,0.5)"),borderRadius:4}
+  ]},options:{responsive:true,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{grid:{color:"rgba(255,255,255,0.03)"},ticks:{color:"#64748b",font:{size:9},callback:v=>v+"%"}},y:{ticks:{color:"#94a3b8",font:{size:9}},grid:{display:false}}}}});
+
+  dc("ch0d");charts["ch0d"]=new Chart(document.getElementById("ch0d"),{type:"bar",data:{labels:names,datasets:[
+    {label:"L2C %",data:sorted.map(r=>r.l2c),backgroundColor:"rgba(99,102,241,0.6)",borderRadius:3},
+    {label:"C2P %",data:sorted.map(r=>r.c2p),backgroundColor:"rgba(245,158,11,0.6)",borderRadius:3},
+    {label:"App2P %",data:sorted.map(r=>r.app2p),backgroundColor:"rgba(16,185,129,0.6)",borderRadius:3}
+  ]},options:{responsive:true,indexAxis:'y',plugins:{legend:{labels:{color:"#94a3b8",font:{size:9}}}},scales:{x:{grid:{color:"rgba(255,255,255,0.03)"},ticks:{color:"#64748b",font:{size:9},callback:v=>v+"%"}},y:{ticks:{color:"#94a3b8",font:{size:9}},grid:{display:false}}}}});
+}
+
+function renderPage1(){
+  buildKPIs(D.sh,"kpis1");
+  buildTable(D.sh,"shTable",false);
+  const names=D.sh.map(r=>r.name);
+
+  dc("ch1a");charts["ch1a"]=new Chart(document.getElementById("ch1a"),{type:"bar",data:{labels:names,datasets:[
+    {label:"Calls/Day/HC",data:D.sh.map(r=>r.calls_day_hc),backgroundColor:"rgba(99,102,241,0.7)",borderRadius:4},
+    {label:"Unique/Day/HC",data:D.sh.map(r=>r.unique_day_hc),backgroundColor:"rgba(59,130,246,0.7)",borderRadius:4}
+  ]},options:{responsive:true,plugins:{legend:{labels:{color:"#94a3b8",font:{size:10}}}},scales:{x:{ticks:{color:"#94a3b8"},grid:{color:"rgba(255,255,255,0.03)"}},y:{ticks:{color:"#64748b"},grid:{color:"rgba(255,255,255,0.03)"}}}}});
+
+  dc("ch1b");charts["ch1b"]=new Chart(document.getElementById("ch1b"),{type:"bar",data:{labels:names,datasets:[
+    {label:"Connect %",data:D.sh.map(r=>r.connect_pct),backgroundColor:"rgba(16,185,129,0.7)",borderRadius:4},
+    {label:"C2C %",data:D.sh.map(r=>r.c2c),backgroundColor:"rgba(245,158,11,0.7)",borderRadius:4},
+    {label:"L2C %",data:D.sh.map(r=>r.l2c),backgroundColor:"rgba(139,92,246,0.7)",borderRadius:4}
+  ]},options:{responsive:true,plugins:{legend:{labels:{color:"#94a3b8",font:{size:10}}}},scales:{x:{ticks:{color:"#94a3b8"},grid:{color:"rgba(255,255,255,0.03)"}},y:{ticks:{color:"#64748b",callback:v=>v+"%"},grid:{color:"rgba(255,255,255,0.03)"}}}}});
+}
+
+function renderPage2(){
+  buildKPIs(D.tl_sh,"kpis2");
+  buildTable(D.tl_sh,"tlshTable",false);
+  const names=D.tl_sh.map(r=>r.name.replace("BLR.TL.","").replace("BLR.UT.TL.","").replace("DEL.TL.","").replace("BLR.M.TL.","").replace(" TBH","*"));
+
+  dc("ch2a");charts["ch2a"]=new Chart(document.getElementById("ch2a"),{type:"bar",data:{labels:names,datasets:[
+    {label:"Calls/Day/HC",data:D.tl_sh.map(r=>r.calls_day_hc),backgroundColor:D.tl_sh.map(r=>r.calls_day_hc>=250?"rgba(16,185,129,0.7)":"rgba(239,68,68,0.5)"),borderRadius:4}
+  ]},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:"#94a3b8",font:{size:9}},grid:{color:"rgba(255,255,255,0.03)"}},y:{ticks:{color:"#64748b"},grid:{color:"rgba(255,255,255,0.03)"}}}}});
+
+  dc("ch2b");charts["ch2b"]=new Chart(document.getElementById("ch2b"),{type:"bar",data:{labels:names,datasets:[
+    {label:"Connect %",data:D.tl_sh.map(r=>r.connect_pct),backgroundColor:"rgba(16,185,129,0.6)",borderRadius:3},
+    {label:"C2C %",data:D.tl_sh.map(r=>r.c2c),backgroundColor:"rgba(245,158,11,0.6)",borderRadius:3}
+  ]},options:{responsive:true,plugins:{legend:{labels:{color:"#94a3b8",font:{size:10}}}},scales:{x:{ticks:{color:"#94a3b8",font:{size:9}},grid:{color:"rgba(255,255,255,0.03)"}},y:{ticks:{color:"#64748b",callback:v=>v+"%"},grid:{color:"rgba(255,255,255,0.03)"}}}}});
+}
+
+function render(){
+  document.querySelectorAll(".page").forEach((p,i)=>{p.classList.toggle("hide",i!==curTab)});
+  if(curTab===0)renderPage0();
+  else if(curTab===1)renderPage1();
+  else if(curTab===2)renderPage2();
+}
+
+function init(){
+  const tlSel=document.getElementById("tlSel");
+  D.tl.sort((a,b)=>a.name.localeCompare(b.name)).forEach(r=>{const o=document.createElement("option");o.value=r.name;o.textContent=r.name;tlSel.appendChild(o);});
+  tlSel.onchange=()=>{curTL=tlSel.value;curSH="ALL";document.getElementById("shSel").value="ALL";render();};
+
+  const shSel=document.getElementById("shSel");
+  D.sh.forEach(r=>{const o=document.createElement("option");o.value=r.name;o.textContent=r.name;shSel.appendChild(o);});
+  shSel.onchange=()=>{curSH=shSel.value;curTL="ALL";document.getElementById("tlSel").value="ALL";render();};
+
+  document.querySelectorAll(".tab").forEach(t=>{t.onclick=()=>{curTab=+t.dataset.tab;document.querySelectorAll(".tab").forEach(x=>x.classList.remove("on"));t.classList.add("on");render();};});
+  render();
+}
+init();
+</script>
+</body>
+</html>
